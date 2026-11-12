@@ -8,7 +8,7 @@
   /* Tokens replicados del archivo de Figma "Milestones" (nodo 2:946). */
   :root {
     color-scheme: light;
-    --color-scene-background-2: #e8e8e8;
+    --color-scene-background-2: #dbdde8;
     --color-icon-primary: #000000;
     --color-surface-general: #ffffff;
     --color-surface-general-2: rgba(255, 255, 255, 0.5);
@@ -33,7 +33,7 @@
     --radius-pill: 999px;
     --radius-thumb: 8px;
     /* Escena dramática (referencia /Scene): negro arriba, casi blanco abajo. */
-    --scene-gradient: linear-gradient(180deg, #050607 0%, #1d2023 16%, #6f7478 36%, #c3c7ca 55%, #e9ebed 74%, #f4f5f6 100%);
+    --scene-gradient: linear-gradient(180deg, #0c141d 0%, #1f2732 14%, #6d7888 32%, #babecb 50%, #d9dbe6 70%, #dbdde8 100%);
     --scene-vignette: radial-gradient(120% 85% at 62% 56%, rgba(0,0,0,0) 45%, rgba(0,0,0,.22) 100%);
     --panel-underlay: rgba(255, 255, 255, 0.78); /* mantiene legible el panel sobre la parte oscura */
     --hover: rgba(0, 0, 0, 0.05);
@@ -45,7 +45,7 @@
   /* El botón del sol alterna este tema; no está en Figma, se deriva de los mismos tokens. */
   :root[data-theme="dark"] {
     color-scheme: dark;
-    --color-scene-background-2: #161618;
+    --color-scene-background-2: #0a1119;
     --color-icon-primary: #ffffff;
     --color-surface-general: #0c0c0d;
     --color-surface-general-2: rgba(22, 22, 24, 0.5);
@@ -55,7 +55,7 @@
     --color-text-secondary: #8b8f94;
     --color-text-inverse: #000000;
     --color-thumbnail: #2b2b2e;
-    --scene-gradient: linear-gradient(180deg, #000000 0%, #0b0c0e 22%, #25282b 50%, #44484c 78%, #54585c 100%);
+    --scene-gradient: linear-gradient(180deg, #05090e 0%, #0a1119 22%, #18202a 50%, #424c59 78%, #586170 100%);
     --scene-vignette: radial-gradient(120% 85% at 62% 56%, rgba(0,0,0,0) 40%, rgba(0,0,0,.45) 100%);
     --panel-underlay: rgba(12, 12, 13, 0.78);
     --hover: rgba(255, 255, 255, 0.08);
@@ -651,12 +651,19 @@
     // el mismo degradado de la escena (CSS), para poder refractarlo dentro del cristal
     "float bgL(float t){",
     "  t=clamp(t,0.,1.);",
-    "  float l=mix(.022,.125,smoothstep(0.,.16,t));",
-    "  l=mix(l,.455,smoothstep(.16,.36,t)); l=mix(l,.78,smoothstep(.36,.55,t));",
-    "  l=mix(l,.92,smoothstep(.55,.74,t)); l=mix(l,.96,smoothstep(.74,1.,t));",
+    "  float l=mix(.07,.18,smoothstep(0.,.14,t));",
+    "  l=mix(l,.46,smoothstep(.14,.32,t)); l=mix(l,.72,smoothstep(.32,.5,t));",
+    "  l=mix(l,.84,smoothstep(.5,.7,t)); l=mix(l,.87,smoothstep(.7,1.,t));",
     "  float k=mix(0.,.045,smoothstep(0.,.22,t));",
     "  k=mix(k,.155,smoothstep(.22,.5,t)); k=mix(k,.28,smoothstep(.5,.78,t)); k=mix(k,.34,smoothstep(.78,1.,t));",
     "  return mix(l,k,u_dark);",
+    "}",
+    // matiz azul pizarra de la escena: #0C141D en sombras -> #DBDDE8 en luces
+    "vec3 tone(float l){",
+    "  vec3 c=mix(vec3(.02,.035,.055),vec3(.047,.078,.114),smoothstep(0.,.07,l));",
+    "  c=mix(c,vec3(.43,.47,.535),smoothstep(.07,.46,l));",
+    "  c=mix(c,vec3(.859,.867,.91),smoothstep(.46,.87,l));",
+    "  return mix(c,vec3(1.),smoothstep(.87,1.,l));",
     "}",
     "void main(){",
     "  vec2 p=vec2(gl_FragCoord.x,u_res.y-gl_FragCoord.y);",
@@ -688,14 +695,15 @@
     "  vec2 nn=normalize(n+vec2(1e-4));",
     "  vec3 nrm=normalize(vec3(nn*(1.-e),z+.15));",
     // el fondo se ve a través: casi recto en el centro, doblado e invertido en el canto
-    "  float k=.82-2.1*edge*edge;",
-    "  float ca=.09*edge;",
+    "  float k=.7-2.6*edge*edge;",
+    "  float ca=.15*edge;",
     "  vec3 refr=vec3(bgL((bc.y+n.y*bc.z*(k-ca))/u_res.y),bgL((bc.y+n.y*bc.z*k)/u_res.y),bgL((bc.y+n.y*bc.z*(k+ca))/u_res.y));",
     "  refr=(refr-.5)*1.12+.5;",
     // relleno ahumado de cada celda
-    "  vec3 cell=refr*(1.-bt)+vec3(.014,.015,.018)*bt;",
+    "  float ft=bt*.4;",
+    "  vec3 cell=refr*(1.-ft)+vec3(.014,.015,.018)*ft;",
     // volumen: contraluz desde abajo -> cúpula oscura arriba y luminosa abajo
-    "  cell*=mix(.5,1.22,smoothstep(-.95,.9,n.y));",
+    "  cell*=mix(.74,1.14,smoothstep(-.95,.9,n.y));",
     // canto grueso del cristal: oscuro arriba, se aclara hacia abajo (solo en las celdas claras)
     "  cell*=1.-.85*pow(edge,1.8)*(1.-bt)*(1.-.75*smoothstep(-.3,.9,n.y));",
     // luz concentrada en el interior del canto inferior
@@ -711,14 +719,19 @@
     "  float dir=.3+.9*pow(max(dot(nn,vec2(-.707,-.707)),0.),2.)+.8*pow(max(dot(nn,vec2(.5,.866)),0.),2.);",
     "  cell+=vec3(1.)*dir*exp(best/(1.*u_s));",
     // hover: el cristal se enciende un poco
-    "  cell+=vec3(.10)*bh*z+vec3(.25)*bh*exp(best/(3.*u_s));",
+    "  float gs=pow(max(dot(nrm,normalize(vec3(-.38,-.6,.7))),0.),14.);",
+    "  float cres=exp(best/(bc.z*.09))*smoothstep(.1,-.9,n.y);",
+    "  cell=mix(cell,cell*1.18+vec3(.10,.105,.12),bh);",
+    "  cell+=bh*(vec3(.55)*smoothstep(.15,.75,gs)+vec3(.45)*cres+vec3(.25)*exp(best/(3.*u_s)));",
     "  col=mix(col,cell,aC);",
     "  col*=1.-.4*exp(mem/(.8*u_s));",
     "  col=clamp(col,0.,1.);",
+    "  float L=dot(col,vec3(.299,.587,.114));",
+    "  col=clamp(tone(L)+(col-L)*.6,0.,1.);",
     // fuera: sombra difusa y la luz que el cristal proyecta debajo
-    "  float sh=(1.-smoothstep(-30.*u_s,110.*u_s,us))*.34;",
+    "  float sh=(1.-smoothstep(-30.*u_s,110.*u_s,us))*0.;",
     "  float glow=(1.-smoothstep(-70.*u_s,10.*u_s,us))*.5*mix(1.,.35,u_dark)*smoothstep(0.,40.*u_s,mem);",
-    "  float ao=exp(-max(mem,0.)/(7.*u_s))*.08;",
+    "  float ao=exp(-max(mem,0.)/(7.*u_s))*0.;",
     "  float aOut=clamp(sh+ao,0.,1.);",
     "  vec3 outC=vec3(glow)*(1.-aOut);",
     "  gl_FragColor=vec4(col*aM+outC*(1.-aM),aM+(1.-aM)*clamp(aOut+glow*(1.-aOut),0.,1.));",
